@@ -2,9 +2,9 @@ name: Compile Sketch
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   build:
@@ -17,19 +17,21 @@ jobs:
       - name: Install Arduino CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
-          echo "/home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/bin" >> $GITHUB_PATH
+          echo "./bin" >> $GITHUB_PATH
 
-      - name: Setup Board and Libraries
+      - name: Setup ESP8266 Core
         run: |
-          arduino-cli core update-index
-          # Ganti URL di bawah jika menggunakan ESP32
           arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
           arduino-cli core install esp8266:esp8266 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
-          
-          # Jika project butuh library tertentu, tambahkan di sini, contoh:
-          # arduino-cli lib install "ArduinoJson"
+
+      - name: Install Required Libraries
+        run: |
+          # Tambahkan library yang dibutuhkan di sini jika ada error 'No such file or directory'
+          # arduino-cli lib install "ESP8266WiFi"
+          # arduino-cli lib install "DNSServer"
 
       - name: Compile Sketch
         run: |
-          # Sesuaikan nama file .ino jika berbeda
-          arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 WifiXv1.5.ino
+          # Perintah ini akan mencari file .ino secara otomatis di folder utama
+          SKETCH_PATH=$(find . -maxdepth 1 -name "*.ino")
+          arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 "$SKETCH_PATH"
