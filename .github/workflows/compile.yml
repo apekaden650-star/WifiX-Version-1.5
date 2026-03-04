@@ -26,10 +26,20 @@ jobs:
 
       - name: Fix Structure and Compile
         run: |
+          # 1. Buat folder sesuai nama file .ino lu
           mkdir -p WifiXv1.5
+          
+          # 2. Copy SEMUA isi repo ke folder baru (biar oui.h dan LittleFS aman)
           cp -a . WifiXv1.5/ 2>/dev/null || true
+          
+          # 3. Buat folder output untuk hasil .bin
           mkdir -p build_output
-          ./bin/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 --output-dir ./build_output WifiXv1.5/WifiXv1.5.ino
+          
+          # 4. Compile dengan settingan Flash 4MB (1MB FS) biar gak mental
+          ./bin/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 \
+            --build-property "build.flash_mode=dio" \
+            --build-property "build.flash_size=4M1M" \
+            --output-dir ./build_output WifiXv1.5/WifiXv1.5.ino
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
