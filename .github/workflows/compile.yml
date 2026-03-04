@@ -1,4 +1,4 @@
-name: Compile WifiX Final Fix
+name: Compile WifiX Spacehuhn 4M2M
 
 on: [push, workflow_dispatch]
 
@@ -17,27 +17,30 @@ jobs:
           arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
           arduino-cli core install deauther:esp8266 --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
 
-      - name: Install Required Libraries
+      - name: Install Libraries
         run: |
           arduino-cli lib install "SimpleCLI"
           arduino-cli lib install "ArduinoJson"@5.13.5
+          # Install NeoPixel versi terbaru secara global buat nimpa yang error di folder src
+          arduino-cli lib install "Adafruit NeoPixel"
 
       - name: Fix Structure and Compile
         run: |
           # 1. Buat folder wajib sesuai nama .ino
           mkdir -p WifiXv1.5
-          
-          # 2. Copy SEMUA file ke folder kerja
           cp -rp ./* WifiXv1.5/ 2>/dev/null || true
           
-          # 3. Compile pake Board NodeMCU biar Wemos D1 Mini lu kenal pin D5, D6, dll.
-          # Kita tambahin --build-property buat paksa compiler liat folder src
-          arduino-cli compile --fqbn deauther:esp8266:nodemcuv2:eesz=4M1M \
+          # 2. Folder output .bin
+          mkdir -p build
+          
+          # 3. Compile pake Board generic SDK Spacehuhn dengan setting 4M2M
+          # Kita paksa compiler pake library NeoPixel yang baru biar gak error architecture
+          arduino-cli compile --fqbn deauther:esp8266:generic:eesz=4M2M \
             --build-property "build.extra_flags=-I{build.source.path}/src/ArduinoJson-v5.13.5" \
             --output-dir ./build ./WifiXv1.5/WifiXv1.5.ino
 
       - name: Upload Binary
         uses: actions/upload-artifact@v4
         with:
-          name: WifiX-V1.5-Wemos-Bin
+          name: WifiX-V1.5-Spacehuhn-4M2M
           path: ./build/*.bin
