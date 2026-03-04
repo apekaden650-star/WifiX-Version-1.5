@@ -16,24 +16,21 @@ jobs:
 
       - name: Install Arduino CLI
         run: |
-          # Instalasi langsung ke folder bin lokal agar aman
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
           echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
       - name: Setup ESP8266 Core
         run: |
-          # Pakai path manual biar gak ada "command not found" lagi
           ./bin/arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
           ./bin/arduino-cli core install esp8266:esp8266 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
 
       - name: Fix Structure and Compile
         run: |
-          # 1. Buat folder sementara sesuai nama file .ino lu
+          # 1. Buat folder sesuai nama file .ino lu
           mkdir -p WifiXv1.5
           
-          # 2. Copy semua file ke folder itu (Arduino CLI wajib foldernya sama dengan nama file .ino)
-          # Kita pakai rsync atau cp biar semua sub-folder (data, src, dll) ikut terbawa
-          cp -r A_config.h Accesspoints.* Attack.* CLI.* DisplayUI.* EEPROMHelper.h Names.* SSIDs.* Scan.* SimpleList.h Stations.* WifiXv1.5.ino debug.h functions.h language.h led.* src/ data/ web_interface/ WifiXv1.5/ 2>/dev/null || true
+          # 2. Copy SEMUA file (termasuk oui.h) ke folder kerja
+          cp -r * WifiXv1.5/ 2>/dev/null || true
           
-          # 3. Jalankan compile langsung nembak file yang benar
+          # 3. Jalankan compile
           ./bin/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 WifiXv1.5/WifiXv1.5.ino
