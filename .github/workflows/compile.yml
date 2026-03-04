@@ -1,4 +1,4 @@
-name: Compile WifiX Spacehuhn Final Fix
+name: Compile WifiX Final 4M2M
 
 on: [push, workflow_dispatch]
 
@@ -30,7 +30,7 @@ jobs:
           mkdir -p WifiXv1.5
           cp -rp ./* WifiXv1.5/ 2>/dev/null || true
           
-          # 2. HAPUS library bermasalah di folder src biar gak bentrok (PENTING!)
+          # 2. HAPUS library bermasalah di folder src biar gak bentrok (WAJIB!)
           rm -rf WifiXv1.5/src/Adafruit_NeoPixel-1.7.0
           rm -rf WifiXv1.5/src/ArduinoJson-v5.13.5
           
@@ -38,6 +38,7 @@ jobs:
           mkdir -p build
           
           # 4. Compile pake Board NodeMCU (biar kenal pin D5) tapi tetep SDK Spacehuhn
+          # Pake setting eesz=4M2M sesuai request lu
           arduino-cli compile --fqbn deauther:esp8266:nodemcuv2:eesz=4M2M \
             --output-dir ./build ./WifiXv1.5/WifiXv1.5.ino
 
