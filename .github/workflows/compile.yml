@@ -22,21 +22,16 @@ jobs:
       - name: Setup ESP8266 Core
         run: |
           ./bin/arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
-          # Pakai versi 2.7.4 karena lebih stabil untuk project Deauther/Network Tool
+          # Kita pakai versi 2.7.4 yang lebih stabil buat project Deauther/WiFiX
           ./bin/arduino-cli core install esp8266:esp8266@2.7.4 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
-
-      - name: Install Deauth Dependencies
-        run: |
-          # Install library yang biasanya dibutuhkan project WiFiX / Deauther
-          ./bin/arduino-cli lib install "ESP8266WiFi"
-          ./bin/arduino-cli lib install "ESPAsyncTCP"
-          ./bin/arduino-cli lib install "ESPAsyncWebServer"
 
       - name: Fix Structure and Compile
         run: |
+          # 1. Buat folder sesuai nama file .ino lu
           mkdir -p WifiXv1.5
-          cp -r * WifiXv1.5/ 2>/dev/null || true
-          # Hapus folder hasil duplikasi agar tidak rekursif
-          rm -rf WifiXv1.5/WifiXv1.5
           
+          # 2. Copy SEMUA isi repo ke folder baru (biar oui.h masuk)
+          cp -a . WifiXv1.5/ 2>/dev/null || true
+          
+          # 3. Compile langsung ke file yang lu lingkarin
           ./bin/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 WifiXv1.5/WifiXv1.5.ino
