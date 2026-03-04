@@ -1,4 +1,4 @@
-name: Compile WifiX Fix Pin Error
+name: Compile WifiX Final Fix
 
 on: [push, workflow_dispatch]
 
@@ -15,31 +15,29 @@ jobs:
       - name: Install Spacehuhn Deauther SDK
         run: |
           arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
-          # Install core deauther
           arduino-cli core install deauther:esp8266 --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
 
       - name: Install Required Libraries
         run: |
           arduino-cli lib install "SimpleCLI"
-          # Pakai versi 5.13.5 biar gak bentrok sama yang di folder src
           arduino-cli lib install "ArduinoJson"@5.13.5
 
       - name: Fix Structure and Compile
         run: |
-          # 1. Bikin folder wajib sesuai nama .ino
+          # 1. Buat folder wajib sesuai nama .ino
           mkdir -p WifiXv1.5
-          cp -a . WifiXv1.5/ 2>/dev/null || true
           
-          # 2. Folder output .bin
-          mkdir -p build
+          # 2. Copy SEMUA file ke folder kerja
+          cp -rp ./* WifiXv1.5/ 2>/dev/null || true
           
-          # 3. Compile pake FQBN nodemcuv2 di dalem SDK Spacehuhn (biar kenal pin D1-D8)
-          # Dan pake eesz=4M1M buat layout flash yang stabil
+          # 3. Compile pake Board NodeMCU biar Wemos D1 Mini lu kenal pin D5, D6, dll.
+          # Kita tambahin --build-property buat paksa compiler liat folder src
           arduino-cli compile --fqbn deauther:esp8266:nodemcuv2:eesz=4M1M \
-          --output-dir ./build ./WifiXv1.5/WifiXv1.5.ino
+            --build-property "build.extra_flags=-I{build.source.path}/src/ArduinoJson-v5.13.5" \
+            --output-dir ./build ./WifiXv1.5/WifiXv1.5.ino
 
       - name: Upload Binary
         uses: actions/upload-artifact@v4
         with:
-          name: WifiX-V1.5-Fixed-Bin
+          name: WifiX-V1.5-Wemos-Bin
           path: ./build/*.bin
