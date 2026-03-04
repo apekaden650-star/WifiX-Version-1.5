@@ -1,4 +1,4 @@
-name: Compile and Export Bin
+name: Compile with Spacehuhn SDK
 
 on:
   push:
@@ -19,24 +19,23 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
           echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
-      - name: Setup ESP8266 Core
+      - name: Setup Spacehuhn Core (v2.0.0)
         run: |
+          # Pakai Core 2.0.0 biar deauth gak mental
           ./bin/arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
-          ./bin/arduino-cli core install esp8266:esp8266@2.7.4 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
+          ./bin/arduino-cli core install esp8266:esp8266@2.0.0 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
 
       - name: Fix Structure and Compile
         run: |
           mkdir -p WifiXv1.5
           cp -a . WifiXv1.5/ 2>/dev/null || true
-          
-          # Buat folder khusus untuk hasil output
           mkdir -p build_output
           
-          # Tambahkan flag --output-dir untuk menyimpan file .bin
+          # Jalankan compile ke bin
           ./bin/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 --output-dir ./build_output WifiXv1.5/WifiXv1.5.ino
 
-      - name: Upload Binary Artifact
+      - name: Upload Spacehuhn-Style Bin
         uses: actions/upload-artifact@v4
         with:
-          name: WiFiX-V1.5-Binaries
+          name: WiFiX-Spacehuhn-SDK
           path: build_output/*.bin
