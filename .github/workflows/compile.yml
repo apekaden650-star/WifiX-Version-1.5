@@ -3,7 +3,8 @@ name: Compile Deauther Bin
 on:
   push:
     branches: [ main ]
-  pull_request: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -21,7 +22,6 @@ jobs:
       - name: Setup Stable Deauth Core (v2.6.3)
         run: |
           ./bin/arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
-          # Versi 2.6.3 dukung LittleFS tapi tetep galak buat Deauth
           ./bin/arduino-cli core install esp8266:esp8266@2.6.3 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
 
       - name: Fix Structure and Compile
@@ -29,12 +29,10 @@ jobs:
           mkdir -p WifiXv1.5
           cp -a . WifiXv1.5/ 2>/dev/null || true
           mkdir -p build_output
-          
-          # Compile ke folder build_output
           ./bin/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 --output-dir ./build_output WifiXv1.5/WifiXv1.5.ino
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WiFiX-V1.5-Deauth-Bin
+          name: WiFiX-V1.5-Final-Bin
           path: build_output/*.bin
