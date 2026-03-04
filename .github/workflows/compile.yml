@@ -1,4 +1,4 @@
-name: Compile WifiX Spacehuhn 4M2M
+name: Compile WifiX Spacehuhn Final Fix
 
 on: [push, workflow_dispatch]
 
@@ -17,11 +17,11 @@ jobs:
           arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
           arduino-cli core install deauther:esp8266 --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
 
-      - name: Install Libraries
+      - name: Install Official Libraries
         run: |
+          # Install versi resmi biar gak bentrok sama isi folder src lu
           arduino-cli lib install "SimpleCLI"
           arduino-cli lib install "ArduinoJson"@5.13.5
-          # Install NeoPixel versi terbaru secara global buat nimpa yang error di folder src
           arduino-cli lib install "Adafruit NeoPixel"
 
       - name: Fix Structure and Compile
@@ -30,17 +30,19 @@ jobs:
           mkdir -p WifiXv1.5
           cp -rp ./* WifiXv1.5/ 2>/dev/null || true
           
-          # 2. Folder output .bin
+          # 2. HAPUS library bermasalah di folder src biar gak bentrok (PENTING!)
+          rm -rf WifiXv1.5/src/Adafruit_NeoPixel-1.7.0
+          rm -rf WifiXv1.5/src/ArduinoJson-v5.13.5
+          
+          # 3. Folder output .bin
           mkdir -p build
           
-          # 3. Compile pake Board generic SDK Spacehuhn dengan setting 4M2M
-          # Kita paksa compiler pake library NeoPixel yang baru biar gak error architecture
-          arduino-cli compile --fqbn deauther:esp8266:generic:eesz=4M2M \
-            --build-property "build.extra_flags=-I{build.source.path}/src/ArduinoJson-v5.13.5" \
+          # 4. Compile pake Board NodeMCU (biar kenal pin D5) tapi tetep SDK Spacehuhn
+          arduino-cli compile --fqbn deauther:esp8266:nodemcuv2:eesz=4M2M \
             --output-dir ./build ./WifiXv1.5/WifiXv1.5.ino
 
       - name: Upload Binary
         uses: actions/upload-artifact@v4
         with:
-          name: WifiX-V1.5-Spacehuhn-4M2M
+          name: WifiX-V1.5-Final-4M2M
           path: ./build/*.bin
