@@ -1,48 +1,45 @@
-name: Compile Deauther Bin
+name: Compile WifiX Spacehuhn SDK
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Arduino CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
-          echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
 
-      - name: Setup Stable Deauth Core (v2.6.3)
+      - name: Install Spacehuhn Deauther SDK
         run: |
-          ./bin/arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
-          ./bin/arduino-cli core install esp8266:esp8266@2.6.3 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
+          # Pake URL sakti dari Spacehuhn biar packet injection gak mental
+          arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
+          arduino-cli core install deauther:esp8266 --additional-urls https://raw.githubusercontent.com/SpacehuhnTech/arduino/main/package_spacehuhn_index.json
+
+      - name: Install Required Libraries
+        run: |
+          # Install SimpleCLI yang dibutuhin buat command line interface
+          arduino-cli lib install "SimpleCLI"
+          # Install ArduinoJson versi 5 (wajib buat project deauther lama)
+          arduino-cli lib install "ArduinoJson"@5.13.5
 
       - name: Fix Structure and Compile
         run: |
-          # 1. Buat folder sesuai nama file .ino lu
+          # 1. Bikin folder sesuai nama file .ino lu biar gak error
           mkdir -p WifiXv1.5
-          
-          # 2. Copy SEMUA isi repo ke folder baru (biar oui.h dan LittleFS aman)
           cp -a . WifiXv1.5/ 2>/dev/null || true
           
-          # 3. Buat folder output untuk hasil .bin
-          mkdir -p build_output
+          # 2. Bikin folder output
+          mkdir -p build
           
-          # 4. Compile dengan settingan Flash 4MB (1MB FS) biar gak mental
-          ./bin/arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 \
-            --build-property "build.flash_mode=dio" \
-            --build-property "build.flash_size=4M1M" \
-            --output-dir ./build_output WifiXv1.5/WifiXv1.5.ino
+          # 3. Compile pake FQBN khusus Deauther SDK (Flash 4MB, FS 2MB)
+          arduino-cli compile --fqbn deauther:esp8266:generic:eesz=4M2M \
+          --output-dir ./build ./WifiXv1.5/WifiXv1.5.ino
 
-      - name: Upload Binary Artifact
+      - name: Upload Binary
         uses: actions/upload-artifact@v4
         with:
-          name: WiFiX-V1.5-Final-Bin
-          path: build_output/*.bin
+          name: WifiX-V1.5-Spacehuhn-Bin
+          path: ./build/*.bin
