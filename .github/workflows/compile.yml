@@ -24,14 +24,8 @@ jobs:
           arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
           arduino-cli core install esp8266:esp8266 --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
 
-      - name: Install Required Libraries
-        run: |
-          # Tambahkan library yang dibutuhkan di sini jika ada error 'No such file or directory'
-          # arduino-cli lib install "ESP8266WiFi"
-          # arduino-cli lib install "DNSServer"
-
       - name: Compile Sketch
         run: |
-          # Perintah ini akan mencari file .ino secara otomatis di folder utama
-          SKETCH_PATH=$(find . -maxdepth 1 -name "*.ino")
-          arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 "$SKETCH_PATH"
+          # Pakai flag --output-dir biar file hasil compile (bin) gampang dicari
+          # Kita arahkan langsung ke file .ino milikmu
+          arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 WifiXv1.5.ino
