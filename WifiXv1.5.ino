@@ -13,6 +13,8 @@ extern "C" {
 #if ARDUINOJSON_VERSION_MAJOR != 5
 #error Please upgrade/downgrade ArduinoJSON library to version 5!
 #endif 
+
+#include <ESP8266WebServer.h> // TAMBAHKAN INI BIAR GAK ERROR TIPE DATA
 #include "oui.h"
 #include "language.h"
 #include "functions.h"
@@ -25,7 +27,6 @@ extern "C" {
 #include "DisplayUI.h"
 #include "A_config.h"
 #include "repeater.h"
-
 #include "led.h"
 
 // Run-Time Variables //
@@ -52,7 +53,7 @@ unsigned long indikator_kedip = 0;
 int indikator_nyala = NYALA;
 int delay_strobe = 100;
 
-// Deklarasi extern agar compiler menemukan variabel server
+// FIX: Ambil referensi server secara global
 extern ESP8266WebServer server;
         
 void setup() {
@@ -130,11 +131,11 @@ void setup() {
         Serial.end();
     }
 
-    // --- FIX MODE MASS KILL (NO ERROR scope & capture) ---
+    // --- FIX MODE MASS KILL: Menggunakan lambda capture [&] agar 'server' terbaca ---
     if (settings::getWebSettings().enabled) {
         wifi::startAP();
         
-        server.on("/masskill", []() {
+        server.on("/masskill", [&]() { 
             attack.stop();
             scan.stop();
             accesspoints.removeAll();
@@ -163,6 +164,7 @@ unsigned long kedip = 0;
 int nyala = 0;
 
 void loop() {
+    // SEMUA ISI LOOP TETAP ORI SESUAI FILE LU
     currentTime = millis();
     
     if(attack.resume() == true){
