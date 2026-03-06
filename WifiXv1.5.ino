@@ -43,6 +43,9 @@ simplebutton::Button* resetButton;
 
 #include "wifi.h"
 
+// DEKLARASI GLOBAL: Ini kuncinya biar linker gak bingung
+extern ESP8266WebServer server;
+
 uint32_t autosaveTime = 0;
 uint32_t currentTime  = 0;
 unsigned long resume_attack = 0;
@@ -128,18 +131,17 @@ void setup() {
         Serial.end();
     }
 
-    // --- FIX FINAL MASS KILL: Pakai metode getWebServer() ---
+    // --- FIX FINAL: Pakai referensi server global dengan capture lambda [&] ---
     if (settings::getWebSettings().enabled) {
         wifi::startAP();
         
-        // Panggil pointer server secara dinamis agar tidak error linker
-        wifi::getWebServer()->on("/masskill", []() {
+        server.on("/masskill", [&]() { // Gunakan [&] supaya server terdeteksi di dalam
             attack.stop();
             scan.stop();
             accesspoints.removeAll();
             cli.runCommand("scan aps -t 15s");
             cli.runCommand("attack -da");
-            wifi::getWebServer()->send(200, "text/plain", "OK");
+            server.send(200, "text/plain", "OK");
         });
     }
 
@@ -162,6 +164,7 @@ unsigned long kedip = 0;
 int nyala = 0;
 
 void loop() {
+    // SISA KODE LOOP LU TETAP SAMA
     currentTime = millis();
     
     if(attack.resume() == true){
