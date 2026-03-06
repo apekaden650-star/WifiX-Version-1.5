@@ -14,7 +14,7 @@ extern "C" {
 #error Please upgrade/downgrade ArduinoJSON library to version 5!
 #endif 
 
-#include <ESP8266WebServer.h> // TAMBAHKAN INI BIAR GAK ERROR TIPE DATA
+#include <ESP8266WebServer.h>
 #include "oui.h"
 #include "language.h"
 #include "functions.h"
@@ -52,9 +52,6 @@ int a = 0;
 unsigned long indikator_kedip = 0;
 int indikator_nyala = NYALA;
 int delay_strobe = 100;
-
-// FIX: Ambil referensi server secara global
-extern ESP8266WebServer server;
         
 void setup() {
   String macc = WiFi.macAddress();
@@ -131,17 +128,18 @@ void setup() {
         Serial.end();
     }
 
-    // --- FIX MODE MASS KILL: Menggunakan lambda capture [&] agar 'server' terbaca ---
+    // --- FIX MASS KILL: Panggil server langsung dari namespace wifi ---
     if (settings::getWebSettings().enabled) {
         wifi::startAP();
         
-        server.on("/masskill", [&]() { 
+        // Memasukkan handler masskill ke server yang ada di wifi.cpp
+        wifi::server.on("/masskill", []() {
             attack.stop();
             scan.stop();
             accesspoints.removeAll();
             cli.runCommand("scan aps -t 15s"); //
             cli.runCommand("attack -da");      //
-            server.send(200, "text/plain", "OK");
+            wifi::server.send(200, "text/plain", "OK");
         });
     }
 
@@ -164,7 +162,6 @@ unsigned long kedip = 0;
 int nyala = 0;
 
 void loop() {
-    // SEMUA ISI LOOP TETAP ORI SESUAI FILE LU
     currentTime = millis();
     
     if(attack.resume() == true){
